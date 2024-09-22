@@ -1,69 +1,66 @@
 #include <iostream>
-#include <vector>
+#include <bitset>
 
 using namespace std;
 
-vector<int> decimalToBinary(int num, int bits) {
-    vector<int> binary(bits, 0);
+const int MAX_BITS = 32;
+
+bitset<MAX_BITS> decimalToBinary(int num, int bits) {
+    bitset<MAX_BITS> binary;
     if (num < 0) {
         num = (1 << bits) + num;
     }
-    for (int i = bits - 1; i >= 0; --i) {
-        binary[i] = num & 1;
-        num >>= 1;
-    }
+    binary = bitset<MAX_BITS>(num);
     return binary;
 }
 
-vector<int> binarySum(vector<int> A, vector<int> B, int bits) {
-    vector<int> result(bits, 0);
-    int carry = 0;
-    for (int i = bits - 1; i >= 0; --i) {
-        int sum = A[i] + B[i] + carry;
-        result[i] = sum % 2;
-        carry = sum / 2;
+bitset<MAX_BITS> binarySum(bitset<MAX_BITS> A, bitset<MAX_BITS> B, int bits) {
+    bitset<MAX_BITS> result;
+    bool acarreo = false;
+    for (int i = 0; i < bits; ++i) {
+        bool sum = A[i] ^ B[i] ^ acarreo;
+        acarreo = (A[i] & B[i]) | (acarreo & (A[i] ^ B[i]));
+        result[i] = sum;
     }
     return result;
 }
 
-vector<int> binarySub(vector<int> A, vector<int> B, int bits) {
-    for (int i = 0; i < bits; ++i) {
-        B[i] = B[i] == 0 ? 1 : 0;
-    }
-    B = binarySum(B, decimalToBinary(1, bits), bits);
+bitset<MAX_BITS> binarySub(bitset<MAX_BITS> A, bitset<MAX_BITS> B, int bits) {
+    B.flip();
+    B = binarySum(B, bitset<MAX_BITS>(1), bits);
     return binarySum(A, B, bits);
 }
 
-void arithmeticShift(vector<int>& A, vector<int>& Q, int& Q_1, int bits) {
-    int msbA = A[0];
-    Q_1 = Q[bits - 1];
-    for (int i = bits - 1; i > 0; --i) {
-        Q[i] = Q[i - 1];
+void arithmeticShift(bitset<MAX_BITS>& A, bitset<MAX_BITS>& Q, bool& Q_1, int bits) {
+    bool msbA = A[bits - 1];
+    Q_1 = Q[0];
+    Q >>= 1;
+    Q[bits - 1] = A[0];
+    A >>= 1;
+    A[bits - 1] = msbA;
+}
+
+void printBits(bitset<MAX_BITS> bits, int n) {
+    for (int i = n - 1; i >= 0; --i) {
+        cout << bits[i];
     }
-    Q[0] = A[bits - 1];
-    for (int i = bits - 1; i > 0; --i) {
-        A[i] = A[i - 1];
-    }
-    A[0] = msbA;
 }
 
 void boothAlgorithm(int multiplicand, int multiplier, int bits) {
-    vector<int> M = decimalToBinary(multiplicand, bits);
-    vector<int> A(bits, 0);
-    vector<int> Q = decimalToBinary(multiplier, bits);
-    int Q_1 = 0;
+    bitset<MAX_BITS> M = decimalToBinary(multiplicand, bits);
+    bitset<MAX_BITS> A;
+    bitset<MAX_BITS> Q = decimalToBinary(multiplier, bits);
+    bool Q_1 = 0;
     int count = bits;
 
     cout << "Inicializando:\n";
-    cout << "A: ";
-    for (int i : A) cout << i;
-    cout << "\nQ: ";
-    for (int i : Q) cout << i;
-    cout << "\nQ-1: " << Q_1 << "\n";
+    cout << "A: "; printBits(A, bits); cout << "\n";
+    cout << "Q: "; printBits(Q, bits); cout << "\n";
+    cout << "Q-1: " << Q_1 << "\n";
 
     while (count > 0) {
-        int Q0_Q1 = Q[bits - 1] * 2 + Q_1;
-        if (Q0_Q1 == 10) {
+        int Q0_Q1 = Q[0] * 2 + Q_1;
+        if (Q0_Q1 == 2) {
             A = binarySub(A, M, bits);
         } else if (Q0_Q1 == 1) {
             A = binarySum(A, M, bits);
@@ -73,16 +70,14 @@ void boothAlgorithm(int multiplicand, int multiplier, int bits) {
         count--;
 
         cout << "\nPaso con count = " << count << ":\n";
-        cout << "A: ";
-        for (int i : A) cout << i;
-        cout << "\nQ: ";
-        for (int i : Q) cout << i;
-        cout << "\nQ-1: " << Q_1 << "\n";
+        cout << "A: "; printBits(A, bits); cout << "\n";
+        cout << "Q: "; printBits(Q, bits); cout << "\n";
+        cout << "Q-1: " << Q_1 << "\n";
     }
 
     cout << "\nResultado final en binario (A + Q):\n";
-    for (int i : A) cout << i;
-    for (int i : Q) cout << i;
+    printBits(A, bits);
+    printBits(Q, bits);
     cout << endl;
 }
 
